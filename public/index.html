@@ -54,6 +54,7 @@ aside.open{transform:none}#menu{display:inline-block}}
 <dialog id="dlg"><h3 style="margin:0">Settings</h3>
 <p style="font-size:13px;color:var(--mut)">Keys are stored in this browser and sent to your backend over HTTPS with each request. The backend never logs or returns them. Leave blank to use server environment keys.</p>
 <div id="keys"></div>
+<label>Backend URL (empty = same server; in the APK use your Termux/hosted server)</label><input id="api" placeholder="http://127.0.0.1:3000">
 <label>Access token (only if the server sets ACCESS_TOKEN)</label><input id="tok" type="password" autocomplete="off">
 <label class="row"><input type="checkbox" id="fb" style="flex:none;width:auto"> Automatic provider fallback</label>
 <div class="row" style="margin-top:14px"><button class="btn pri" id="save">Save</button><button class="btn" id="close">Close</button></div></dialog>
@@ -62,6 +63,8 @@ aside.open{transform:none}#menu{display:inline-block}}
 <script>
 const $=s=>document.querySelector(s),LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
 let P={},chats=LS.get('chats',[]),cur=null,busy=false,cfg=LS.get('cfg',{keys:{},token:'',fb:true,prov:'gemini',model:''});
+if(cfg.api==null)cfg.api=(location.hostname==='localhost'&&!location.port)?'http://127.0.0.1:3000':'';
+const A=()=>(cfg.api||'').trim().replace(/\/$/,'');
 const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const hdr=()=>{const h={'Content-Type':'application/json'};if(cfg.token)h['x-access-token']=cfg.token;for(const p in cfg.keys)if(cfg.keys[p])h['x-key-'+p]=cfg.keys[p];return h};
 function theme(t){document.documentElement.dataset.theme=t;$('#theme').textContent=t==='dark'?'Light mode':'Dark mode';LS.set('theme',t)}
@@ -83,7 +86,7 @@ if(a.children.length)b.append(a);}
 if(m.meta){const d=document.createElement('div');d.className='meta';d.textContent=m.meta;b.append(d)}return b}
 async function run(){busy=true;save();render();const box=$('#msgs');const b=document.createElement('div');b.className='m glass assistant';b.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';box.append(b);box.scrollTop=box.scrollHeight;
 let text='',meta='',err=null;
-try{const r=await fetch('/api/chat',{method:'POST',headers:hdr(),body:JSON.stringify({messages:cur.msgs.map(({role,content})=>({role,content})),provider:cfg.prov,model:cfg.model,fallback:cfg.fb})});
+try{const r=await fetch(A()+'/api/chat',{method:'POST',headers:hdr(),body:JSON.stringify({messages:cur.msgs.map(({role,content})=>({role,content})),provider:cfg.prov,model:cfg.model,fallback:cfg.fb})});
 if(!r.ok||!r.body){err=(await r.json().catch(()=>({}))).error||'Request failed ('+r.status+')'}else{const rd=r.body.getReader(),dc=new TextDecoder();let buf='';
 while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});const ev=buf.split('\n\n');buf=ev.pop();
 for(const e of ev){if(!e.startsWith('data:'))continue;const j=JSON.parse(e.slice(5));if(j.type==='provider')meta=j.provider+' · '+j.model+(j.fellBack?' (fallback)':'');else if(j.type==='text'){text+=j.text;b.replaceChildren(md(text));box.scrollTop=box.scrollHeight}else if(j.type==='error')err=j.error}}}}
@@ -99,10 +102,10 @@ $('#prov').onchange=e=>{cfg.prov=e.target.value;cfg.model='';models();LS.set('cf
 $('#model').onchange=e=>{cfg.model=e.target.value;LS.set('cfg',cfg)};
 function keysUI(){const k=$('#keys');k.innerHTML='';for(const p in P){k.insertAdjacentHTML('beforeend',`<label>${p} API key${P[p].serverKey?' (server key set)':''}</label><div class="row"><input type="password" autocomplete="off" data-p="${p}" value="${esc(cfg.keys[p]||'')}"><button class="btn" data-t="${p}" type="button">Test</button><span class="st" data-s="${p}"></span></div>`)}
 k.querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const p=b.dataset.t,st=k.querySelector(`[data-s=${p}]`);cfg.keys[p]=k.querySelector(`[data-p=${p}]`).value.trim();st.textContent='Testing…';
-try{const r=await(await fetch('/api/test',{method:'POST',headers:hdr(),body:JSON.stringify({provider:p})})).json();st.textContent=r.ok?'Connected':(r.error||'Failed').slice(0,60);st.title=r.error||''}catch{st.textContent='Network error'}})}
-$('#gear').onclick=()=>{keysUI();$('#tok').value=cfg.token;$('#fb').checked=cfg.fb;$('#dlg').showModal()};
+try{const r=await(await fetch(A()+'/api/test',{method:'POST',headers:hdr(),body:JSON.stringify({provider:p})})).json();st.textContent=r.ok?'Connected':(r.error||'Failed').slice(0,60);st.title=r.error||''}catch{st.textContent='Network error'}})}
+$('#gear').onclick=()=>{keysUI();$('#tok').value=cfg.token;$('#api').value=cfg.api||'';$('#fb').checked=cfg.fb;$('#dlg').showModal()};
 $('#close').onclick=()=>$('#dlg').close();
-$('#save').onclick=()=>{document.querySelectorAll('[data-p]').forEach(i=>cfg.keys[i.dataset.p]=i.value.trim());cfg.token=$('#tok').value;cfg.fb=$('#fb').checked;LS.set('cfg',cfg);$('#dlg').close()};
-(async()=>{try{P=await(await fetch('/api/providers',{headers:hdr()})).json()}catch{}
+$('#save').onclick=()=>{document.querySelectorAll('[data-p]').forEach(i=>cfg.keys[i.dataset.p]=i.value.trim());cfg.token=$('#tok').value;cfg.api=$('#api').value.trim();cfg.fb=$('#fb').checked;LS.set('cfg',cfg);$('#dlg').close()};
+(async()=>{try{P=await(await fetch(A()+'/api/providers',{headers:hdr()})).json()}catch{}
 const s=$('#prov');Object.keys(P).forEach(p=>s.add(new Option(p,p)));if(!P[cfg.prov])cfg.prov=Object.keys(P)[0]||'gemini';s.value=cfg.prov;models();hist();render()})();
 </script></body></html>

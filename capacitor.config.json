@@ -1,0 +1,6 @@
+{
+  "appId": "com.mk.aibuilder",
+  "appName": "MK AI BUILDER",
+  "webDir": "www",
+  "server": { "androidScheme": "http", "cleartext": true }
+}

@@ -17,6 +17,11 @@ const PROVIDERS = {
 };
 const SYSTEM = 'You are MK AI BUILDER, an expert coding assistant. When asked to build a website or app, output COMPLETE files, each in its own fenced code block preceded by a line "File: <path>". Never output partial snippets.';
 
+app.use('/api', (req, res, next) => {
+  res.set({ 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': req.get('access-control-request-headers') || '*', 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS' });
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use('/api', rateLimit({ windowMs: 60_000, max: 30, standardHeaders: true, legacyHeaders: false }));
 app.use('/api', (req, res, next) => {
   const t = process.env.ACCESS_TOKEN;
