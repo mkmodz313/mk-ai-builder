@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>MK AI BUILDER</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+<style>
+:root{--bg:linear-gradient(135deg,#e6f3ff,#f4efff 55%,#fff);--glass:rgba(255,255,255,.62);--bd:rgba(124,92,255,.18);--tx:#1d1b3a;--mut:#6b6990;--ac:#6c4cf5;--ac2:#4aa8ff;--me:linear-gradient(135deg,#6c4cf5,#4aa8ff)}
+[data-theme=dark]{--bg:linear-gradient(135deg,#0d1226,#1a1238 60%,#0b1020);--glass:rgba(30,28,62,.6);--bd:rgba(150,130,255,.2);--tx:#ece9ff;--mut:#9a97c4}
+*{box-sizing:border-box}body{margin:0;height:100vh;height:100dvh;background:var(--bg);color:var(--tx);font:15px/1.55 system-ui,sans-serif;display:flex}
+.glass{background:var(--glass);backdrop-filter:blur(16px);border:1px solid var(--bd)}
+aside{width:270px;padding:14px;display:flex;flex-direction:column;gap:10px;border-width:0 1px 0 0}
+aside h1{font-size:17px;margin:4px 6px;background:var(--me);-webkit-background-clip:text;background-clip:text;color:transparent}
+aside small{color:var(--mut);margin:0 6px 4px}
+button,select,input{font:inherit;color:inherit}
+.btn{border:1px solid var(--bd);background:var(--glass);border-radius:12px;padding:8px 12px;cursor:pointer}
+.btn:hover,.btn:focus-visible{border-color:var(--ac);outline:none}.btn.pri{background:var(--me);color:#fff;border:0}
+#hist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:4px}
+.h{padding:8px 10px;border-radius:10px;cursor:pointer;display:flex;justify-content:space-between;gap:6px;font-size:14px}
+.h.on,.h:hover{background:var(--glass)}.h span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+main{flex:1;display:flex;flex-direction:column;min-width:0}
+header{display:flex;gap:8px;padding:10px 14px;align-items:center;border-width:0 0 1px}
+header .sp{flex:1}#menu{display:none}
+#msgs{flex:1;overflow:auto;padding:18px 14px;display:flex;flex-direction:column;gap:14px}
+.m{max-width:min(820px,94%);padding:12px 16px;border-radius:20px;overflow-wrap:anywhere}
+.m.user{align-self:flex-end;background:var(--me);color:#fff;white-space:pre-wrap}
+.m.assistant{align-self:flex-start}.m pre{position:relative;background:#14122b;border-radius:12px;padding:12px;overflow:auto}
+.m code{font-family:ui-monospace,Menlo,monospace;font-size:13px}.m p{margin:.4em 0}
+.cp{position:absolute;right:8px;top:8px;font-size:12px;padding:3px 8px}
+.acts{display:flex;gap:6px;margin-top:6px}.acts .btn{font-size:12px;padding:2px 9px}
+.meta{font-size:12px;color:var(--mut);margin-top:4px}
+.dots span{display:inline-block;width:7px;height:7px;margin-right:4px;border-radius:50%;background:var(--ac);animation:b 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{50%{transform:translateY(-5px);opacity:.4}}@media(prefers-reduced-motion:reduce){.dots span{animation:none}}
+form{display:flex;gap:8px;padding:12px 14px calc(12px + env(safe-area-inset-bottom));border-width:1px 0 0}
+textarea{flex:1;resize:none;border-radius:14px;border:1px solid var(--bd);background:var(--glass);padding:10px 14px;max-height:160px;font:inherit;color:inherit}
+.empty{margin:auto;text-align:center;color:var(--mut)}.empty h2{color:var(--tx);margin:0 0 4px}
+dialog{border:1px solid var(--bd);border-radius:20px;padding:20px;width:min(460px,92vw);background:var(--bg);color:var(--tx)}
+dialog::backdrop{background:rgba(10,8,30,.5)}dialog label{display:block;margin:10px 0 3px;font-size:13px;color:var(--mut)}
+dialog input,dialog select{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--bd);background:var(--glass)}
+.row{display:flex;gap:8px;align-items:center}.row input{flex:1}.st{font-size:12px;min-width:90px}
+@media(max-width:760px){aside{position:fixed;inset:0 auto 0 0;z-index:5;transform:translateX(-100%);transition:transform .2s;background:var(--bg)}
+aside.open{transform:none}#menu{display:inline-block}}
+</style></head><body>
+<aside class="glass" id="side"><h1>MK AI BUILDER</h1><small>Build anything with AI.</small>
+<button class="btn pri" id="new">New chat</button><div id="hist"></div>
+<button class="btn" id="gear">Settings &amp; API keys</button></aside>
+<main>
+<header class="glass"><button class="btn" id="menu" aria-label="Menu">☰</button>
+<select id="prov" class="btn"></select><select id="model" class="btn"></select><span class="sp"></span>
+<button class="btn" id="theme">Dark mode</button></header>
+<div id="msgs"></div>
+<form class="glass" id="f"><textarea id="in" rows="1" placeholder="Describe the website or app you want to build" required></textarea>
+<button class="btn pri" id="send">Send</button></form></main>
+<dialog id="dlg"><h3 style="margin:0">Settings</h3>
+<p style="font-size:13px;color:var(--mut)">Keys are stored in this browser and sent to your backend over HTTPS with each request. The backend never logs or returns them. Leave blank to use server environment keys.</p>
+<div id="keys"></div>
+<label>Access token (only if the server sets ACCESS_TOKEN)</label><input id="tok" type="password" autocomplete="off">
+<label class="row"><input type="checkbox" id="fb" style="flex:none;width:auto"> Automatic provider fallback</label>
+<div class="row" style="margin-top:14px"><button class="btn pri" id="save">Save</button><button class="btn" id="close">Close</button></div></dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script>
+const $=s=>document.querySelector(s),LS={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch{}}};
+let P={},chats=LS.get('chats',[]),cur=null,busy=false,cfg=LS.get('cfg',{keys:{},token:'',fb:true,prov:'gemini',model:''});
+const esc=s=>s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const hdr=()=>{const h={'Content-Type':'application/json'};if(cfg.token)h['x-access-token']=cfg.token;for(const p in cfg.keys)if(cfg.keys[p])h['x-key-'+p]=cfg.keys[p];return h};
+function theme(t){document.documentElement.dataset.theme=t;$('#theme').textContent=t==='dark'?'Light mode':'Dark mode';LS.set('theme',t)}
+theme(LS.get('theme',matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'));
+$('#theme').onclick=()=>theme(document.documentElement.dataset.theme==='dark'?'light':'dark');
+$('#menu').onclick=()=>$('#side').classList.toggle('open');
+function md(t){const d=document.createElement('div');d.innerHTML=marked.parse(esc2(t));d.querySelectorAll('pre').forEach(pre=>{const c=pre.querySelector('code');if(c)hljs.highlightElement(c);const b=document.createElement('button');b.className='btn cp';b.textContent='Copy';b.onclick=()=>navigator.clipboard.writeText(pre.innerText.replace(/Copy$/,'').trim()).then(()=>{b.textContent='Copied';setTimeout(()=>b.textContent='Copy',1200)});pre.append(b)});return d}
+// escape raw HTML outside code so model output cannot inject markup
+function esc2(t){const parts=t.split(/(```[\s\S]*?(?:```|$))/g);return parts.map((p,i)=>i%2?p:p.replace(/</g,'&lt;')).join('')}
+function save(){LS.set('chats',chats);hist()}
+function hist(){const h=$('#hist');h.innerHTML='';chats.forEach(c=>{const e=document.createElement('div');e.className='h'+(c===cur?' on':'');e.innerHTML='<span>'+esc(c.title)+'</span><button class="btn" style="padding:0 7px" aria-label="Delete chat">×</button>';e.onclick=()=>{cur=c;render();hist();$('#side').classList.remove('open')};e.querySelector('button').onclick=ev=>{ev.stopPropagation();chats=chats.filter(x=>x!==c);if(cur===c)cur=null;save();render()};h.append(e)})}
+function render(){const box=$('#msgs');box.innerHTML='';if(!cur||!cur.msgs.length){box.innerHTML='<div class="empty"><h2>What are we building?</h2>Describe a site, dashboard, or app. You get complete files back.</div>';return}
+cur.msgs.forEach((m,i)=>box.append(bubble(m,i)));box.scrollTop=box.scrollHeight}
+function bubble(m,i){const b=document.createElement('div');b.className='m glass '+m.role;if(m.role==='user')b.textContent=m.content;else b.append(md(m.content));
+if(!busy&&(m.role==='user'?i===cur.msgs.length-2||i===cur.msgs.length-1:i===cur.msgs.length-1)){const a=document.createElement('div');a.className='acts';
+if(m.role==='assistant'){a.innerHTML='<button class="btn">Copy</button><button class="btn">Regenerate</button>';a.children[0].onclick=()=>navigator.clipboard.writeText(m.content);a.children[1].onclick=()=>{cur.msgs.pop();run()}}
+else if(i===cur.msgs.length-2){a.innerHTML='<button class="btn">Edit</button>';a.children[0].onclick=()=>{$('#in').value=m.content;cur.msgs.splice(i);save();render();$('#in').focus()}}
+if(a.children.length)b.append(a);}
+if(m.meta){const d=document.createElement('div');d.className='meta';d.textContent=m.meta;b.append(d)}return b}
+async function run(){busy=true;save();render();const box=$('#msgs');const b=document.createElement('div');b.className='m glass assistant';b.innerHTML='<div class="dots"><span></span><span></span><span></span></div>';box.append(b);box.scrollTop=box.scrollHeight;
+let text='',meta='',err=null;
+try{const r=await fetch('/api/chat',{method:'POST',headers:hdr(),body:JSON.stringify({messages:cur.msgs.map(({role,content})=>({role,content})),provider:cfg.prov,model:cfg.model,fallback:cfg.fb})});
+if(!r.ok||!r.body){err=(await r.json().catch(()=>({}))).error||'Request failed ('+r.status+')'}else{const rd=r.body.getReader(),dc=new TextDecoder();let buf='';
+while(true){const{done,value}=await rd.read();if(done)break;buf+=dc.decode(value,{stream:true});const ev=buf.split('\n\n');buf=ev.pop();
+for(const e of ev){if(!e.startsWith('data:'))continue;const j=JSON.parse(e.slice(5));if(j.type==='provider')meta=j.provider+' · '+j.model+(j.fellBack?' (fallback)':'');else if(j.type==='text'){text+=j.text;b.replaceChildren(md(text));box.scrollTop=box.scrollHeight}else if(j.type==='error')err=j.error}}}}
+catch(e){err='Network error: '+e.message}
+if(err)text+=(text?'\n\n':'')+'**Error:** '+err;
+cur.msgs.push({role:'assistant',content:text||'No response.',meta});busy=false;save();render()}
+$('#f').onsubmit=e=>{e.preventDefault();if(busy)return;const v=$('#in').value.trim();if(!v)return;
+if(!cur){cur={id:Date.now(),title:v.slice(0,40),msgs:[]};chats.unshift(cur)}cur.msgs.push({role:'user',content:v});$('#in').value='';run()};
+$('#in').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!matchMedia('(max-width:760px)').matches){e.preventDefault();$('#f').requestSubmit()}};
+$('#new').onclick=()=>{cur=null;render();hist();$('#side').classList.remove('open')};
+function models(){const s=$('#model');s.innerHTML='';(P[cfg.prov]?.models||[]).forEach(m=>s.add(new Option(m,m)));if(!P[cfg.prov]?.models.includes(cfg.model))cfg.model=s.value;s.value=cfg.model}
+$('#prov').onchange=e=>{cfg.prov=e.target.value;cfg.model='';models();LS.set('cfg',cfg)};
+$('#model').onchange=e=>{cfg.model=e.target.value;LS.set('cfg',cfg)};
+function keysUI(){const k=$('#keys');k.innerHTML='';for(const p in P){k.insertAdjacentHTML('beforeend',`<label>${p} API key${P[p].serverKey?' (server key set)':''}</label><div class="row"><input type="password" autocomplete="off" data-p="${p}" value="${esc(cfg.keys[p]||'')}"><button class="btn" data-t="${p}" type="button">Test</button><span class="st" data-s="${p}"></span></div>`)}
+k.querySelectorAll('[data-t]').forEach(b=>b.onclick=async()=>{const p=b.dataset.t,st=k.querySelector(`[data-s=${p}]`);cfg.keys[p]=k.querySelector(`[data-p=${p}]`).value.trim();st.textContent='Testing…';
+try{const r=await(await fetch('/api/test',{method:'POST',headers:hdr(),body:JSON.stringify({provider:p})})).json();st.textContent=r.ok?'Connected':(r.error||'Failed').slice(0,60);st.title=r.error||''}catch{st.textContent='Network error'}})}
+$('#gear').onclick=()=>{keysUI();$('#tok').value=cfg.token;$('#fb').checked=cfg.fb;$('#dlg').showModal()};
+$('#close').onclick=()=>$('#dlg').close();
+$('#save').onclick=()=>{document.querySelectorAll('[data-p]').forEach(i=>cfg.keys[i.dataset.p]=i.value.trim());cfg.token=$('#tok').value;cfg.fb=$('#fb').checked;LS.set('cfg',cfg);$('#dlg').close()};
+(async()=>{try{P=await(await fetch('/api/providers',{headers:hdr()})).json()}catch{}
+const s=$('#prov');Object.keys(P).forEach(p=>s.add(new Option(p,p)));if(!P[cfg.prov])cfg.prov=Object.keys(P)[0]||'gemini';s.value=cfg.prov;models();hist();render()})();
+</script></body></html>
